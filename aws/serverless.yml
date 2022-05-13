@@ -1,5 +1,5 @@
 # serverless.yml
-service: StarterProject
+service: FreestyleSkillsIndex
 
 provider:
   name: aws
@@ -8,7 +8,8 @@ provider:
   stage: ${opt:stage, "development"}
 
   environment:
-    TEST_TABLE: ${self:service}-${self:provider.stage}-testTable
+    RESULTS_TABLE: ${self:service}-${self:provider.stage}-ResultsTable
+    LEADERBOARD_TABLE: ${self:service}-${self:provider.stage}-LeaderboardTable
 
   iamRoleStatements:
     - Effect: Allow
@@ -18,14 +19,22 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TEST_TABLE}"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RESULTS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.LEADERBOARD_TABLE}"
 
 functions:
-  testLambda:
-    handler: source/test.handler
+  sendResults:
+    handler: source/main.sendResults
     events:
       - http:
-          path: handler
+          path: sendResults
           method: post
           cors: true
 
@@ -34,14 +43,26 @@ resources:
     testTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.TEST_TABLE}
+        TableName: ${self:provider.environment.RESULTS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+    leaderboardTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.LEADERBOARD_TABLE}
         AttributeDefinitions:
           - AttributeName: key
             AttributeType: S
         KeySchema:
           - AttributeName: key
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-
+        BillingMode: PAY_PER_REQUEST
