@@ -7,7 +7,7 @@ const MobxReact = require("mobx-react")
 import { Survey } from "survey-react-ui"
 import { StylesManager, Model } from "survey-core"
 import "survey-core/defaultV2.css"
-import mainStore from "./mainStore"
+import ReactLeaderboard from "react-leaderboard"
 
 const MainStore = require("mainStore.js")
 
@@ -26,17 +26,29 @@ function getQuestions() {
         .then((response) => response.json())
         .then((data) => {
             MainStore.questionsOriginal = []
-            for (let row of data.values) {
-                MainStore.questionsOriginal.push({
-                    id: row[0],
-                    text: row[1],
-                    scoreParams: [
-                        row[2],
-                        row[3],
-                        row[4]
-                    ]
-                })
+            for (let rowIndex = 0; rowIndex< data.values.length; ++rowIndex) {
+                let row = data.values[rowIndex]
+                switch (rowIndex) {
+                case 0:
+                    MainStore.version = row[0]
+                    break
+                case 1:
+                    break
+                default:
+                    MainStore.questionsOriginal.push({
+                        id: row[0],
+                        text: row[1],
+                        scoreParams: [
+                            row[2],
+                            row[3],
+                            row[4]
+                        ]
+                    })
+                    break
+                }
             }
+        }).catch((error) => {
+            console.error(error)
         })
 }
 
@@ -59,6 +71,8 @@ function getTiers() {
 }
 
 function sendResults(score, data) {
+    data.version = MainStore.version
+
     fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/sendResults", {
         method: "POST",
         headers: {
@@ -70,17 +84,54 @@ function sendResults(score, data) {
         })
     }).then((response) => response.json())
         .then((response) => {
-            console.log(response)
-
             MainStore.percentile = response.percentile
             MainStore.rank = response.rank
-            if (mainStore.rank === 1) {
+            if (MainStore.rank === 1) {
                 MainStore.tier = "GOAT"
             } else if (MainStore.tiers.length > 0) {
                 let tierIndex = Math.min(MainStore.tiers.length - 1, Math.floor(MainStore.percentile / 100 * MainStore.tiers.length))
                 MainStore.tier = MainStore.tiers[tierIndex].tier
             }
+
+            getLeaderboard()
         })
+}
+
+function getLeaderboard() {
+    fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/getLeaderboard", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).then((response) => response.json())
+        .then((response) => {
+            MainStore.leaderboardData = response.data
+        })
+}
+
+@MobxReact.observer class Leaderboard extends React.Component {
+    constructor() {
+        super()
+    }
+
+    render() {
+        if (MainStore.leaderboardData === undefined) {
+            return null
+        }
+
+        let users = MainStore.leaderboardData.map((data) => {
+            return {
+                name: data.username,
+                score: data.score
+            }
+        })
+
+        return (
+            <div>
+                <ReactLeaderboard users={users} paginate={25} />
+            </div>
+        )
+    }
 }
 
 @MobxReact.observer class Results extends React.Component {
@@ -98,15 +149,16 @@ function sendResults(score, data) {
                 <h2>
                     Score: {this.props.score}
                 </h2>
-                <div>
+                <h3>
                     Rank: {MainStore.rank}
-                </div>
-                <div>
+                </h3>
+                <h3>
                     Title: {MainStore.tier}
-                </div>
-                <div>
+                </h3>
+                <h3>
                     You scored higher than {MainStore.percentile}% of scores
-                </div>
+                </h3>
+                <Leaderboard />
             </div>
         )
     }
@@ -122,22 +174,85 @@ function sendResults(score, data) {
 
         getQuestions()
         getTiers()
+
+        // setTimeout(() => {
+        //     this.testScoreBalance()
+        // }, 500)
     }
 
-    calcScoreFunc(id, sender) {
+    testScoreBalance() {
+        let data0 = {
+            UTL: 2,
+            BTB: 2,
+            Claps: 3,
+            Brushes: 2,
+            Catches: 2,
+            DelayTime: 5,
+            DelayCount: 1,
+            Rolls: 1,
+            Tips: 1,
+            Pulls: 1,
+            Spins: 1
+        }
+        let score0 = this.calcScore(data0, true)
+        console.log(score0, data0)
+
+        let data1 = {
+            UTL: 30,
+            BTB: 30,
+            Claps: 15,
+            Brushes: 30,
+            Catches: 15,
+            DelayTime: 30,
+            DelayCount: 4,
+            Rolls: 5,
+            Tips: 5,
+            Pulls: 7,
+            Spins: 4
+        }
+        let score1 = this.calcScore(data1, true)
+        console.log(score1, data1)
+
+        let data2 = {
+            UTL: 50,
+            BTB: 50,
+            Claps: 30,
+            Brushes: 50,
+            Catches: 25,
+            DelayTime: 100,
+            DelayCount: 12,
+            Rolls: 50,
+            Tips: 20,
+            Pulls: 10,
+            Spins: 10
+        }
+        let score2 = this.calcScore(data2, true)
+        console.log(score2, data2)
+    }
+
+    calcScoreFunc(id, data) {
         let params = MainStore.questionsOriginal.find((q) => id === q.id).scoreParams
-        let input = parseInt(sender.data[id], 10) || 0
+        let input = parseInt(data[id], 10) || 0
         return params[0] * Math.pow(params[1], input / params[2]) - params[0]
     }
 
+    calcScore(data, isVerbose) {
+        let score = 0
+        for (let question of MainStore.questionsOriginal) {
+            let val = this.calcScoreFunc(question.id, data)
+            score += val
+
+            if (isVerbose) {
+                console.log(question.id, data[question.id], val)
+            }
+        }
+
+        return Math.round(score)
+    }
+
     onComplete(sender) {
-        this.state.score = this.calcScoreFunc("UTL", sender)
-        this.state.score += this.calcScoreFunc("BTB", sender)
-
-        this.state.score = Math.round(this.state.score)
-
+        this.state.score = this.calcScore(sender.data)
         this.state.isCompleted = true
-
         this.setState(this.state)
 
         sendResults(this.state.score, sender.data)
@@ -193,7 +308,7 @@ function sendResults(score, data) {
                         {
                             "name": "info",
                             "type": "html",
-                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h3>You need to video record your entire test in 1 shot to join the leaderboard</h3>"
+                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h2>10 Minutes total time</h2><h3>You need to video record your entire test in 1 shot to join the leaderboard</h3>"
                         }
                     ]
                 },
@@ -222,7 +337,7 @@ function sendResults(score, data) {
 
         let surveyRender = !this.state.isCompleted ?
             <Survey
-                json={json}
+                model={new Model(json)}
                 showCompletedPage={false}
                 onComplete={(sender) => this.onComplete(sender)}
             /> :

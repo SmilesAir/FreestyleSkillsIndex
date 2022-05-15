@@ -24,21 +24,6 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
         throw error
     })
 
-    let getLeaderboardParams = {
-        TableName: process.env.LEADERBOARD_TABLE,
-        Key: {"key": "leaderboard0"}
-    }
-    let leaderboardData
-    await docClient.get(getLeaderboardParams).promise().then((response) => {
-        if (Object.keys(response).length !== 0 || response.constructor !== Object) {
-            leaderboardData = response.Item.data
-        } else {
-            leaderboardData = []
-        }
-    }).catch((error) => {
-        throw error
-    })
-
     let getPersonalLeaderbaordParams = {
         TableName: process.env.LEADERBOARD_TABLE,
         Key: {"key": username}
@@ -52,6 +37,7 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
         throw error
     })
 
+    let leaderboardData = await getLeaderboardData()
     let newLeaderboardIndex = 0
     let currentLeaderboardIndex = undefined
     for (; newLeaderboardIndex < leaderboardData.length; ++newLeaderboardIndex) {
@@ -114,8 +100,35 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
 
     return {
         success: true,
-        percentile: Math.round((newLeaderboardIndex + 1) / leaderboardData.length * 100),
+        percentile: Math.round(newLeaderboardIndex / leaderboardData.length * 100),
         rank: Math.max(1, leaderboardData.length - newLeaderboardIndex)
     }
 })}
 
+module.exports.getLeaderboard = (e, c, cb) => { Common.handler(e, c, cb, async (event, context) => {
+    let leaderboardData = await getLeaderboardData()
+
+    return {
+        success: true,
+        data: leaderboardData
+    }
+})}
+
+function getLeaderboardData() {
+    let getLeaderboardParams = {
+        TableName: process.env.LEADERBOARD_TABLE,
+        Key: {"key": "leaderboard0"}
+    }
+    let leaderboardData
+    return docClient.get(getLeaderboardParams).promise().then((response) => {
+        if (Object.keys(response).length !== 0 || response.constructor !== Object) {
+            leaderboardData = response.Item.data
+        } else {
+            leaderboardData = []
+        }
+
+        return leaderboardData
+    }).catch((error) => {
+        throw error
+    })
+}

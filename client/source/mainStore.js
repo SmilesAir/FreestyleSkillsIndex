@@ -5,5 +5,7 @@ const Mobx = require("mobx")
 module.exports = Mobx.observable({
     questionsOriginal: [],
     tier: "Loading...",
-    percentile: "Loading..."
+    percentile: "Loading...",
+    version: undefined,
+    leaderboardData: undefined
 })

@@ -37,6 +37,13 @@ functions:
           path: sendResults
           method: post
           cors: true
+  getLeaderboard:
+    handler: source/main.getLeaderboard
+    events:
+      - http:
+          path: getLeaderboard
+          method: get
+          cors: true
 
 resources:
   Resources:
