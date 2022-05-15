@@ -8,6 +8,7 @@ import { Survey } from "survey-react-ui"
 import { StylesManager, Model } from "survey-core"
 import "survey-core/defaultV2.css"
 import ReactLeaderboard from "react-leaderboard"
+import Navbar from "responsive-react-js-navbar"
 
 const MainStore = require("mainStore.js")
 
@@ -109,9 +110,29 @@ function getLeaderboard() {
         })
 }
 
+function recalculateScores() {
+    fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/recalculateScores", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            version: MainStore.version,
+            questionData: MainStore.questionsOriginal
+        })
+    }).then((response) => response.json())
+        .then((response) => {
+            MainStore.leaderboardData = response.data
+
+            console.log("Score Recalculated", response.data)
+        })
+}
+
 @MobxReact.observer class Leaderboard extends React.Component {
     constructor() {
         super()
+
+        getLeaderboard()
     }
 
     render() {
@@ -139,6 +160,10 @@ function getLeaderboard() {
         super()
     }
 
+    onRetake() {
+        window.location.reload()
+    }
+
     render() {
         if (this.props.isVisible !== true) {
             return null
@@ -158,7 +183,51 @@ function getLeaderboard() {
                 <h3>
                     You scored higher than {MainStore.percentile}% of scores
                 </h3>
+                <hr />
+                <button onClick={() => this.onRetake()} >Retake Test</button>
+                <hr />
                 <Leaderboard />
+            </div>
+        )
+    }
+}
+
+@MobxReact.observer class Rules extends React.Component {
+    constructor() {
+        super()
+    }
+
+    render() {
+        return (
+            <div>
+                <h1>
+                    Rules
+                </h1>
+                <h2>
+                    <ul>
+                        <li>10 Minutes to complete entire test</li>
+                        <li>1 try for each skill</li>
+                        <li>Skills can be done in any order</li>
+                        <li>In order to be validated for the leaderboard, you must submit a single uncut video of your test</li>
+                    </ul>
+                </h2>
+            </div>
+        )
+    }
+}
+
+@MobxReact.observer class Admin extends React.Component {
+    constructor() {
+        super()
+    }
+
+    render() {
+        return (
+            <div>
+                <h1>
+                    Admin
+                </h1>
+                <button onClick={() => recalculateScores()}>Recalculate Scores</button>
             </div>
         )
     }
@@ -170,6 +239,11 @@ function getLeaderboard() {
         this.state = {
             isCompleted: false,
             score: 0
+        }
+
+        this.onHashUpdatedHandle = () => {
+
+            this.forceUpdate()
         }
 
         getQuestions()
@@ -230,6 +304,14 @@ function getLeaderboard() {
         console.log(score2, data2)
     }
 
+    componentDidMount() {
+        window.addEventListener("hashchange", this.onHashUpdatedHandle, false)
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener("hashchange", this.onHashUpdatedHandle, false)
+    }
+
     calcScoreFunc(id, data) {
         let params = MainStore.questionsOriginal.find((q) => id === q.id).scoreParams
         let input = parseInt(data[id], 10) || 0
@@ -267,6 +349,24 @@ function getLeaderboard() {
     }
 
     render() {
+        let links = [
+            {
+                "href": "/#",
+                "label": "Home",
+                "background": false
+            },
+            {
+                "href": "/#leaderboard",
+                "label": "Leaderboard",
+                "background": false
+            },
+            {
+                "href": "/#rules",
+                "label": "Rules",
+                "background": false
+            }
+        ]
+
         let json = {
             "title": "Freestyle Skills Index",
             "progressBarType": "buttons",
@@ -335,19 +435,28 @@ function getLeaderboard() {
             })
         }
 
-        let surveyRender = !this.state.isCompleted ?
-            <Survey
+        let mainElement = null
+        if (window.location.hash === "#leaderboard") {
+            mainElement = <Leaderboard />
+        } else if (window.location.hash === "#rules") {
+            mainElement = <Rules />
+        } else if (window.location.hash === "#admin") {
+            mainElement = <Admin />
+        } else if (!this.state.isCompleted) {
+            mainElement = <Survey
                 model={new Model(json)}
                 showCompletedPage={false}
                 onComplete={(sender) => this.onComplete(sender)}
-            /> :
-            null
+            />
+        } else {
+            mainElement = <Results isVisible={this.state.isCompleted} score={this.state.score} />
+        }
 
         return (
             <div>
                 <div>
-                    {surveyRender}
-                    <Results isVisible={this.state.isCompleted} score={this.state.score} />
+                    <Navbar links={links} />
+                    {mainElement}
                 </div>
             </div>
         )

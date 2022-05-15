@@ -25,6 +25,7 @@
         "react-dom": "^16.5.2",
         "react-form": "^4.0.1",
         "react-leaderboard": "^0.0.3",
+        "responsive-react-js-navbar": "^1.0.3",
         "survey-core": "^1.9.29",
         "survey-react": "^1.9.29",
         "survey-react-ui": "^1.9.29"

@@ -6,28 +6,35 @@ provider:
   runtime: nodejs14.x
   region: us-west-2
   stage: ${opt:stage, "development"}
+  lambdaHashingVersion: "20201221"
 
   environment:
     RESULTS_TABLE: ${self:service}-${self:provider.stage}-ResultsTable
     LEADERBOARD_TABLE: ${self:service}-${self:provider.stage}-LeaderboardTable
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RESULTS_TABLE}"
-    - Effect: Allow
-      Action:
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.LEADERBOARD_TABLE}"
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RESULTS_TABLE}"
+        - Effect: Allow
+          Action:
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.LEADERBOARD_TABLE}"
 
 functions:
   sendResults:
@@ -43,6 +50,13 @@ functions:
       - http:
           path: getLeaderboard
           method: get
+          cors: true
+  recalculateScores:
+    handler: source/main.recalculateScores
+    events:
+      - http:
+          path: recalculateScores
+          method: post
           cors: true
 
 resources:
