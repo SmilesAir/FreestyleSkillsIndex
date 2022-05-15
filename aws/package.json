@@ -1,0 +1,11 @@
+{
+  "name": "freestyle-skills-index",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "npm i && sls deploy",
+    "deploy:production": "npm i && sls deploy --stage production"
+  },
+  "dependencies": {
+  }
+}

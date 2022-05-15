@@ -16,6 +16,8 @@ require("./index.less")
 
 StylesManager.applyTheme("defaultV2")
 
+let awsUrlParam = __STAGE__ === "DEVELOPMENT" ? "d91qmid7sb" : "wo6msbik7a"
+let stageUrlParam = __STAGE__.toLowerCase()
 
 function getQuestions() {
     // https://docs.google.com/spreadsheets/d/1spkEm3nx8iTdk6T23vGzFh4SVkU6ljaPWaz0774wVxQ/edit?usp=sharing
@@ -74,7 +76,7 @@ function getTiers() {
 function sendResults(score, data) {
     data.version = MainStore.version
 
-    fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/sendResults", {
+    fetch(`https://${awsUrlParam}.execute-api.us-west-2.amazonaws.com/${stageUrlParam}/sendResults`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -99,19 +101,22 @@ function sendResults(score, data) {
 }
 
 function getLeaderboard() {
-    fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/getLeaderboard", {
+    let url = `https://${awsUrlParam}.execute-api.us-west-2.amazonaws.com/${stageUrlParam}/getLeaderboard`
+    console.log(url)
+    fetch(url, {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     }).then((response) => response.json())
         .then((response) => {
+            console.log(response)
             MainStore.leaderboardData = response.data
         })
 }
 
 function recalculateScores() {
-    fetch("https://d91qmid7sb.execute-api.us-west-2.amazonaws.com/development/recalculateScores", {
+    fetch(`https://${awsUrlParam}.execute-api.us-west-2.amazonaws.com/${stageUrlParam}/recalculateScores`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -136,8 +141,13 @@ function recalculateScores() {
     }
 
     render() {
-        if (MainStore.leaderboardData === undefined) {
-            return null
+        if (MainStore.leaderboardData === undefined || MainStore.leaderboardData.length <= 0) {
+            return (
+                <div>
+                    <h1>Leaderboard</h1>
+                    <h2>No Results</h2>
+                </div>
+            )
         }
 
         let users = MainStore.leaderboardData.map((data) => {
