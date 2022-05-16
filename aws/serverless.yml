@@ -1,5 +1,5 @@
 # serverless.yml
-service: FreestyleSkillsIndex
+service: freestyle-skills-index
 
 provider:
   name: aws
@@ -11,6 +11,7 @@ provider:
   environment:
     RESULTS_TABLE: ${self:service}-${self:provider.stage}-ResultsTable
     LEADERBOARD_TABLE: ${self:service}-${self:provider.stage}-LeaderboardTable
+    DEPLOY_BUCKET: ${self:service}-${self:provider.stage}-deploy-bucket
 
   iam:
     role:
@@ -87,3 +88,8 @@ resources:
           - AttributeName: key
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
+    deployBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+        BucketName: ${self:provider.environment.DEPLOY_BUCKET}

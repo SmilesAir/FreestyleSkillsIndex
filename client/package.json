@@ -15,10 +15,10 @@
     "main": "source/index.js",
     "scripts": {
         "start": "npm i && codeglue --mode=server --stage=development",
-        "deploy": "aws s3 sync ./builds/web s3://freestyle-skills-index-development",
+        "deploy": "aws s3 sync ./builds/web s3://freestyle-skills-index-development-deploy-bucket",
         "start:production": "npm i && codeglue --mode=server --stage=production",
         "build:production": "codeglue --stage=production",
-        "deploy:production": "npm i && npm run build:production && aws s3 sync ./builds/web s3://completejudging-production"
+        "deploy:production": "npm i && npm run build:production && aws s3 sync ./builds/web s3://freestyle-skills-index-production-deploy-bucket"
     },
     "dependencies": {
         "aws-sdk": "2.316.0",

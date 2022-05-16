@@ -16,7 +16,7 @@ require("./index.less")
 
 StylesManager.applyTheme("defaultV2")
 
-let awsUrlParam = __STAGE__ === "DEVELOPMENT" ? "d91qmid7sb" : "wo6msbik7a"
+let awsUrlParam = __STAGE__ === "DEVELOPMENT" ? "wzapn1wai9" : "48oauwfpia"
 let stageUrlParam = __STAGE__.toLowerCase()
 
 function getQuestions() {
@@ -50,6 +50,12 @@ function getQuestions() {
                     break
                 }
             }
+
+            if (MainStore.questionsOriginal.length === 0) {
+                setTimeout(() => {
+                    getQuestions()
+                }, 1000)
+            }
         }).catch((error) => {
             console.error(error)
         })
@@ -69,6 +75,12 @@ function getTiers() {
                 MainStore.tiers.push({
                     tier: row[0]
                 })
+            }
+
+            if (MainStore.tiers.length === 0) {
+                setTimeout(() => {
+                    getTiers()
+                }, 1000)
             }
         })
 }
@@ -110,7 +122,6 @@ function getLeaderboard() {
         }
     }).then((response) => response.json())
         .then((response) => {
-            console.log(response)
             MainStore.leaderboardData = response.data
         })
 }
@@ -215,8 +226,10 @@ function recalculateScores() {
                 </h1>
                 <h2>
                     <ul>
-                        <li>10 Minutes to complete entire test</li>
+                        <li>5 Minutes to complete entire test</li>
                         <li>1 try for each skill</li>
+                        <li>Only 1 skill can be performed at a time</li>
+                        <li>Entire test must be completed by oneself. No Z Machines</li>
                         <li>Skills can be done in any order</li>
                         <li>In order to be validated for the leaderboard, you must submit a single uncut video of your test</li>
                     </ul>
@@ -282,30 +295,62 @@ function recalculateScores() {
         console.log(score0, data0)
 
         let data1 = {
-            UTL: 30,
-            BTB: 30,
-            Claps: 15,
-            Brushes: 30,
-            Catches: 15,
-            DelayTime: 30,
-            DelayCount: 4,
+            UTL: 63,
+            BTB: 26,
+            Claps: 23,
+            Brushes: 154,
+            Catches: 1,
+            DelayTime: 46,
+            DelayCount: 5,
             Rolls: 5,
             Tips: 5,
             Pulls: 7,
-            Spins: 4
+            Spins: 3
         }
         let score1 = this.calcScore(data1, true)
-        console.log(score1, data1)
+        console.log("Daniel", score1, data1)
+
+        let dataR = {
+            UTL: 72,
+            BTB: 69,
+            Claps: 18,
+            Brushes: 115,
+            Catches: 16,
+            DelayTime: 72,
+            DelayCount: 6,
+            Rolls: 4,
+            Tips: 3,
+            Pulls: 6,
+            Spins: 2
+        }
+        let scoreR = this.calcScore(dataR, true)
+        console.log("Ryan", scoreR, dataR)
+
+        let dataK = {
+            UTL: 4,
+            BTB: 9,
+            Claps: 17,
+            Brushes: 19,
+            Catches: 6,
+            DelayTime: 51,
+            DelayCount: 2,
+            Rolls: 4,
+            Tips: 8,
+            Pulls: 4,
+            Spins: 0
+        }
+        let scoreK = this.calcScore(dataK, true)
+        console.log("Katy", scoreK, dataK)
 
         let data2 = {
-            UTL: 50,
-            BTB: 50,
+            UTL: 70,
+            BTB: 70,
             Claps: 30,
-            Brushes: 50,
+            Brushes: 150,
             Catches: 25,
-            DelayTime: 100,
+            DelayTime: 80,
             DelayCount: 12,
-            Rolls: 50,
+            Rolls: 30,
             Tips: 20,
             Pulls: 10,
             Spins: 10
@@ -381,6 +426,7 @@ function recalculateScores() {
             "title": "Freestyle Skills Index",
             "progressBarType": "buttons",
             "showProgressBar": "top",
+            "showQuestionNumbers": "off",
             "pages": [
                 {
                     "navigationTitle": "Start",
@@ -413,12 +459,12 @@ function recalculateScores() {
                 },
                 {
                     "navigationTitle": "Test",
-                    "navigationDescription": "10 Minutes",
+                    "navigationDescription": "5 Minutes",
                     "elements": [
                         {
                             "name": "info",
                             "type": "html",
-                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h2>10 Minutes total time</h2><h3>You need to video record your entire test in 1 shot to join the leaderboard</h3>"
+                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h2>5 Minutes to complete entire test</h2><h3>You need to video record your entire test in 1 shot to join the leaderboard</h3>"
                         }
                     ]
                 },
