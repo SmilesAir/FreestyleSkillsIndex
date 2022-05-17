@@ -147,8 +147,12 @@ function recalculateScores() {
 @MobxReact.observer class Leaderboard extends React.Component {
     constructor() {
         super()
+    }
 
-        getLeaderboard()
+    componentDidMount() {
+        if (this.props === undefined || this.props.insideResults !== true) {
+            getLeaderboard()
+        }
     }
 
     render() {
@@ -207,7 +211,7 @@ function recalculateScores() {
                 <hr />
                 <button onClick={() => this.onRetake()} >Retake Test</button>
                 <hr />
-                <Leaderboard />
+                <Leaderboard insideResults={true} />
             </div>
         )
     }
