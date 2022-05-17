@@ -114,7 +114,6 @@ function sendResults(score, data) {
 
 function getLeaderboard() {
     let url = `https://${awsUrlParam}.execute-api.us-west-2.amazonaws.com/${stageUrlParam}/getLeaderboard`
-    console.log(url)
     fetch(url, {
         method: "GET",
         headers: {
