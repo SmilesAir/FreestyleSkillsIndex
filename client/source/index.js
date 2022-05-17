@@ -7,7 +7,7 @@ const MobxReact = require("mobx-react")
 import { Survey } from "survey-react-ui"
 import { StylesManager, Model } from "survey-core"
 import "survey-core/defaultV2.css"
-import ReactLeaderboard from "react-leaderboard"
+import ReactLeaderboard from "Leaderboard.js"
 import Navbar from "responsive-react-js-navbar"
 
 const MainStore = require("mainStore.js")
@@ -168,7 +168,9 @@ function recalculateScores() {
         let users = MainStore.leaderboardData.map((data) => {
             return {
                 name: data.username,
-                score: data.score
+                score: data.score,
+                link: data.validationLink,
+                isValidated: data.isValidated === true ? "Y" : "N"
             }
         })
 

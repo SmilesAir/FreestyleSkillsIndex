@@ -26,12 +26,12 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
         throw error
     })
 
-    let getPersonalLeaderbaordParams = {
+    let getPersonalLeaderboardParams = {
         TableName: process.env.LEADERBOARD_TABLE,
         Key: {"key": username}
     }
     let personalLeaderboardData
-    await docClient.get(getPersonalLeaderbaordParams).promise().then((response) => {
+    await docClient.get(getPersonalLeaderboardParams).promise().then((response) => {
         if (Object.keys(response).length !== 0 || response.constructor !== Object) {
             personalLeaderboardData = response.Item.data
         }
@@ -58,7 +58,8 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
         personalLeaderboardData = {
             username: username,
             timestamp: now,
-            score: score
+            score: score,
+            validationLink: data.validationLink
         }
 
         let putPersonalLeaderboardParams = {
@@ -83,7 +84,9 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
         leaderboardData.splice(newLeaderboardIndex - insertOffset, 0, {
             score: score,
             username: username,
-            timestamp: now
+            timestamp: now,
+            validationLink: data.validationLink,
+            isValidated: false
         })
 
         let putLeaderboardParams = {
