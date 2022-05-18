@@ -52,6 +52,13 @@ functions:
           path: getLeaderboard
           method: get
           cors: true
+  getResultDetails:
+    handler: source/main.getResultDetails
+    events:
+      - http:
+          path: getResultDetails/{username}
+          method: get
+          cors: true
   recalculateScores:
     handler: source/main.recalculateScores
     events:

@@ -44,7 +44,8 @@ function getQuestions() {
                         scoreParams: [
                             row[2],
                             row[3],
-                            row[4]
+                            row[4],
+                            row[5]
                         ]
                     })
                     break
@@ -143,6 +144,20 @@ function recalculateScores() {
         })
 }
 
+function getResultDetails(username) {
+    let url = `https://${awsUrlParam}.execute-api.us-west-2.amazonaws.com/${stageUrlParam}/getResultDetails/${username}`
+    fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).then((response) => response.json())
+        .then((response) => {
+            MainStore.resultDetailsData = response.data
+            window.location = "#details"
+        })
+}
+
 @MobxReact.observer class Leaderboard extends React.Component {
     constructor() {
         super()
@@ -152,6 +167,10 @@ function recalculateScores() {
         if (this.props === undefined || this.props.insideResults !== true) {
             getLeaderboard()
         }
+    }
+
+    onDetailsClick(username) {
+        getResultDetails(username)
     }
 
     render() {
@@ -175,7 +194,7 @@ function recalculateScores() {
 
         return (
             <div>
-                <ReactLeaderboard users={users} paginate={25} />
+                <ReactLeaderboard users={users} paginate={25} isAdmin={this.props.isAdmin} onDetailsClick={(username) => this.onDetailsClick(username)} />
             </div>
         )
     }
@@ -210,9 +229,10 @@ function recalculateScores() {
                     You scored higher than {MainStore.percentile}% of scores
                 </h3>
                 <hr />
-                <button onClick={() => this.onRetake()} >Retake Test</button>
+                <button className="surveyJsButton" onClick={() => this.onRetake()} >Retake Test</button>
                 <hr />
                 <Leaderboard insideResults={true} />
+                <Details />
             </div>
         )
     }
@@ -236,9 +256,64 @@ function recalculateScores() {
                         <li>Only 1 skill can be performed at a time</li>
                         <li>Entire test must be completed by oneself. No Z Machines</li>
                         <li>Skills can be done in any order</li>
-                        <li>In order to be validated for the leaderboard, you must submit a single uncut video of your test</li>
+                        <li>In order to be validated for the leaderboard, you must submit a continuous video of your test</li>
                     </ul>
                 </h2>
+            </div>
+        )
+    }
+}
+
+@MobxReact.observer class Details extends React.Component {
+    constructor() {
+        super()
+    }
+
+    componentDidMount() {
+        if (MainStore.resultDetailsData === undefined) {
+            window.location = "#leaderboard"
+        }
+    }
+
+    render() {
+        if (MainStore.resultDetailsData === undefined) {
+            return null
+        }
+
+        let rows = []
+        for (let questionData of MainStore.questionsOriginal) {
+            let input = parseInt(MainStore.resultDetailsData[questionData.id], 10) || 0
+            let score = Math.round(calcScoreFunc(input, questionData.id))
+            let scoreDelta = Math.round(calcScoreFunc(input + 1, questionData.id)) - score
+            rows.push(<tr key={questionData.id}>
+                <td>{questionData.id}</td>
+                <td>{input}</td>
+                <td>{score}</td>
+                <td>{scoreDelta}</td>
+            </tr>)
+        }
+
+        return (
+            <div>
+                <h1>
+                    Detailed Results
+                </h1>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Id</td>
+                            <td>Input</td>
+                            <td>Score</td>
+                            <td>Score + 1</td>
+                        </tr>
+                        {rows}
+                        <tr>
+                            <td>Total</td>
+                            <td />
+                            <td>{calcScore(MainStore.resultDetailsData)}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         )
     }
@@ -256,9 +331,43 @@ function recalculateScores() {
                     Admin
                 </h1>
                 <button onClick={() => recalculateScores()}>Recalculate Scores</button>
+                <Leaderboard isAdmin={true} />
             </div>
         )
     }
+}
+
+function calcScoreFromData(id, data) {
+    let input = parseInt(data[id], 10) || 0
+    return calcScoreFunc(input, id)
+}
+
+function calcScoreFunc(input, id) {
+    let params = MainStore.questionsOriginal.find((q) => id === q.id).scoreParams
+    switch (params[3]) {
+    case "Exponential":
+        return params[0] * Math.pow(params[1], input / params[2]) - params[0]
+    case "Linear":
+        return params[0] * input
+    case "Logarithmic":
+        return params[0] * Math.pow(input / params[2], params[1])
+    }
+
+    return 0
+}
+
+function calcScore(data, isVerbose) {
+    let score = 0
+    for (let question of MainStore.questionsOriginal) {
+        let val = calcScoreFromData(question.id, data)
+        score += val
+
+        if (isVerbose) {
+            console.log(question.id, data[question.id], val)
+        }
+    }
+
+    return Math.round(score)
 }
 
 @MobxReact.observer class Main extends React.Component {
@@ -296,7 +405,7 @@ function recalculateScores() {
             Pulls: 1,
             Spins: 1
         }
-        let score0 = this.calcScore(data0, true)
+        let score0 = calcScore(data0, true)
         console.log(score0, data0)
 
         let data1 = {
@@ -312,7 +421,7 @@ function recalculateScores() {
             Pulls: 7,
             Spins: 3
         }
-        let score1 = this.calcScore(data1, true)
+        let score1 = calcScore(data1, true)
         console.log("Daniel", score1, data1)
 
         let dataR = {
@@ -328,7 +437,7 @@ function recalculateScores() {
             Pulls: 6,
             Spins: 2
         }
-        let scoreR = this.calcScore(dataR, true)
+        let scoreR = calcScore(dataR, true)
         console.log("Ryan", scoreR, dataR)
 
         let dataK = {
@@ -344,7 +453,7 @@ function recalculateScores() {
             Pulls: 4,
             Spins: 0
         }
-        let scoreK = this.calcScore(dataK, true)
+        let scoreK = calcScore(dataK, true)
         console.log("Katy", scoreK, dataK)
 
         let data2 = {
@@ -360,7 +469,7 @@ function recalculateScores() {
             Pulls: 10,
             Spins: 10
         }
-        let score2 = this.calcScore(data2, true)
+        let score2 = calcScore(data2, true)
         console.log(score2, data2)
     }
 
@@ -372,30 +481,12 @@ function recalculateScores() {
         window.removeEventListener("hashchange", this.onHashUpdatedHandle, false)
     }
 
-    calcScoreFunc(id, data) {
-        let params = MainStore.questionsOriginal.find((q) => id === q.id).scoreParams
-        let input = parseInt(data[id], 10) || 0
-        return params[0] * Math.pow(params[1], input / params[2]) - params[0]
-    }
-
-    calcScore(data, isVerbose) {
-        let score = 0
-        for (let question of MainStore.questionsOriginal) {
-            let val = this.calcScoreFunc(question.id, data)
-            score += val
-
-            if (isVerbose) {
-                console.log(question.id, data[question.id], val)
-            }
-        }
-
-        return Math.round(score)
-    }
-
     onComplete(sender) {
-        this.state.score = this.calcScore(sender.data)
+        this.state.score = calcScore(sender.data)
         this.state.isCompleted = true
         this.setState(this.state)
+
+        MainStore.resultDetailsData = sender.data
 
         sendResults(this.state.score, sender.data)
 
@@ -469,7 +560,7 @@ function recalculateScores() {
                         {
                             "name": "info",
                             "type": "html",
-                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h2>5 Minutes to complete entire test</h2><h3>You need to video record your entire test in 1 shot to join the leaderboard</h3>"
+                            "html": "<h1>Rules</h1><h2>1 try for each skill</h2><h2>5 Minutes to complete entire test</h2><h3>You need to upload and link a continuous video of your entire test to join the leaderboard</h3>"
                         }
                     ]
                 },
@@ -503,6 +594,8 @@ function recalculateScores() {
             mainElement = <Rules />
         } else if (window.location.hash === "#admin") {
             mainElement = <Admin />
+        } else if (window.location.hash === "#details") {
+            mainElement = <Details />
         } else if (!this.state.isCompleted) {
             mainElement = <Survey
                 model={new Model(json)}

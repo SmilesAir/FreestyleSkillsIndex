@@ -193,6 +193,7 @@ class Leaderboard extends Component {
                             <td className="rank-header" onClick={ this.sortUsersByScore }> Score </td>
                             <td className="rank-header"> Video </td>
                             <td className="rank-header" onClick={ this.sortUsersByScore }> Validated </td>
+                            <td className="rank-header"> Details </td>
                         </tr>
                         {
                             this.state.ranking.map((user, index) =>
@@ -202,6 +203,7 @@ class Leaderboard extends Component {
                                     { user.page == this.state.page ? <td className="data">{ user.score }</td> : null }
                                     { user.page == this.state.page ? <td className="data">{user.link !== undefined ? <a href={user.link} target="_blank" rel="noreferrer">Video</a> : null}</td> : null }
                                     { user.page == this.state.page ? <td className="data">{ user.isValidated }</td> : null }
+                                    { user.page == this.state.page ? <td className="data"><button onClick={() => this.props.onDetailsClick(user.name)}>Details</button></td> : null }
                                 </tr>
                             )
                         }

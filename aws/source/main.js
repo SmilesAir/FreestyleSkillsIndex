@@ -79,8 +79,6 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
             leaderboardData.splice(currentLeaderboardIndex, 1)
         }
 
-        console.log(currentLeaderboardIndex, leaderboardData, personalLeaderboardData)
-
         leaderboardData.splice(newLeaderboardIndex - insertOffset, 0, {
             score: score,
             username: username,
@@ -116,6 +114,39 @@ module.exports.getLeaderboard = (e, c, cb) => { Common.handler(e, c, cb, async (
     return {
         success: true,
         data: leaderboardData
+    }
+})}
+
+module.exports.getResultDetails = (e, c, cb) => { Common.handler(e, c, cb, async (event, context) => {
+    let username = decodeURI(event.pathParameters.username)
+    let leaderboardData = await getLeaderboardData()
+
+    let resultDetails
+    let leaderboardEntry = leaderboardData.find((data) => data.username === username)
+    if (leaderboardEntry !== undefined) {
+        let getResultParams = {
+            TableName: process.env.RESULTS_TABLE,
+            Key: {
+                username: leaderboardEntry.username,
+                timestamp: `${leaderboardEntry.timestamp}`
+            }
+        }
+        await docClient.get(getResultParams).promise().then((response) => {
+            if (Object.keys(response).length !== 0 || response.constructor !== Object) {
+                resultDetails = response.Item.data
+            }
+        }).catch((error) => {
+            throw error
+        })
+    }
+    else
+    {
+        throw `Can't find result data for ${username}`
+    }
+
+    return {
+        success: true,
+        data: resultDetails
     }
 })}
 
@@ -261,7 +292,17 @@ module.exports.recalculateScores = (e, c, cb) => { Common.handler(e, c, cb, asyn
 function calcScoreFunc(id, data, questionData) {
     let params = questionData.find((q) => id === q.id).scoreParams
     let input = parseInt(data[id], 10) || 0
-    return params[0] * Math.pow(params[1], input / params[2]) - params[0]
+
+    switch (params[3]) {
+    case "Exponential":
+        return params[0] * Math.pow(params[1], input / params[2]) - params[0]
+    case "Linear":
+        return params[0] * input
+    case "Logarithmic":
+        return params[0] * Math.pow(input / params[2], params[1])
+    }
+
+    return 0
 }
 
 function calcScore(data, questionData) {
@@ -269,6 +310,9 @@ function calcScore(data, questionData) {
     for (let question of questionData) {
         let val = calcScoreFunc(question.id, data, questionData)
         score += val
+
+        let input = parseInt(data[question.id], 10) || 0
+        console.log(question.id, input, val)
     }
 
     return Math.round(score)

@@ -7,5 +7,6 @@ module.exports = Mobx.observable({
     tier: "Loading...",
     percentile: "Loading...",
     version: undefined,
-    leaderboardData: undefined
+    leaderboardData: undefined,
+    resultDetailsData: undefined
 })
