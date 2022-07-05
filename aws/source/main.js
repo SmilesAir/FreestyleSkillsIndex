@@ -84,7 +84,8 @@ module.exports.sendResults = (e, c, cb) => { Common.handler(e, c, cb, async (eve
             username: username,
             timestamp: now,
             validationLink: data.validationLink,
-            isValidated: false
+            isValidated: false,
+            version: version
         })
 
         let putLeaderboardParams = {
