@@ -254,6 +254,7 @@ function getResultDetails(username) {
                         <li>5 Minutes to complete entire test</li>
                         <li>1 try for each skill</li>
                         <li>Only 1 skill can be performed at a time</li>
+                        <li>Only 1 disc at a time for each skill</li>
                         <li>Entire test must be completed by oneself. No Z Machines</li>
                         <li>Skills can be done in any order</li>
                         <li>In order to be validated for the leaderboard, you must submit a continuous video of your test</li>
